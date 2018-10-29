@@ -5,4 +5,4 @@ Below is a list of what's been implemented from [List Athlete Activities](https:
 [X] distance
 [X] start_date
 
-
+If anyone's interested they could add some more fields!
