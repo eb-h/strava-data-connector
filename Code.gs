@@ -136,7 +136,7 @@ function getSchema() {
 ***********************/
 
 /**
-* Converts date from zulu ISO format to GDS'
+* Converts date from RFC_3339 to GDS'
 *
 * @param {string} dateReceived: Of the form "YYYY-MM-DDTHH:MM:SSZ"
 * @return {string} date in the form YYYYMMDDHH
@@ -144,8 +144,6 @@ function getSchema() {
 function processDate(dateReceived) {
   return dateReceived.slice(0, -10)      // remove THH:MM:SSZ
                      .replace(/-/g, '')  // remove '-'
-                     //.replace(/:/g, '')  // remove ':'
-                     //.replace('T', '' ) // remove 'T'
 }
 
 function getData(request) {
@@ -187,8 +185,7 @@ function getData(request) {
           row.push(v['distance']);
           break;
         case 'start_date':
-          row.push(processDate(v['start_date']));
-          //row.push(v['start_date']);
+          row.push(processDate(v['start_date_local']));
           break;          
       default:
         values.push('');
