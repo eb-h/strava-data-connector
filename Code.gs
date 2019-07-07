@@ -7,7 +7,7 @@ oauth.OAUTH_CLIENT_ID = 'xxxxx';
 oauth.OAUTH_CLIENT_SECRET = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 
 /**
-* This builds an OAuth2 service for connecting to Spotify
+* This builds an OAuth2 service for connecting to Strava
 * https://developers.strava.com/docs/authentication/
 *
 * @return {OAuth2Service}
@@ -36,14 +36,11 @@ function getOAuthService() {
 * @return {OAuth2Service}
 */
 function authCallback(request) {
-  console.log(request);
   var authorized = getOAuthService().handleCallback(request);
   if (authorized) {
-    console.log('successfully authorised');
-    return HtmlService.createHtmlOutput('Success! You can close this tab.');
+    return HtmlService.createHtmlOutput('Successfully logged in to Strava');
   } else {
-    console.log('unable to authorise');
-    return HtmlService.createHtmlOutput('Denied. You can close this tab');
+    return HtmlService.createHtmlOutput('Login denied by Strava. You may have entered the incorrect account information');
   }
 }
 
@@ -81,14 +78,8 @@ function get3PAuthorizationUrls() {
   return service.getAuthorizationUrl();
 }
 
-// Just let data studio connector 
 function getAuthType() {
-  Logger.log('got auth type')
   return { type: "OAUTH2" };
-}
-
-function getData(request) {
-  Logger.log('tried to get data')
 }
 
 function isAdminUser() {
@@ -111,18 +102,19 @@ function getSchema() {
         dataType: 'STRING',
         semantics: {
           conceptType: 'DIMENSION',
+          semanticType: 'TEXT',
+          dataType: 'STRING',
+          defaultAggregationType: 'NONE',
           isReaggregatable: true
         }
       },
       {
         name: 'distance',
-        label: 'Distance',
+        label: 'Distance (m)',
         description: 'The distance travelled in metres.',
         dataType: 'NUMBER',
         semantics: {
           conceptType: 'METRIC',
-          semanticType: 'NUMBER',
-          semanticGroup: 'NUMERIC',
           isReaggregatable: true
         }
       },
@@ -146,14 +138,16 @@ function getData(request) {
   var headers = {
     Authorization: 'Bearer ' + getOAuthService().getAccessToken()
   }
+  // YYYY-MM-DD to epoch https://developers.google.com/datastudio/connector/date-range
+  var after  = new Date(request.dateRange.startDate).getTime() / 1000 
+  var before = new Date(request.dateRange.endDate  ).getTime() / 1000 
   
-  var url = 'https://www.strava.com/api/v3/athlete/activities?'
+  var url = 'https://www.strava.com/api/v3/athlete/activities?before=' + before + '&after=' + after
   
   var rows = [];
   var fetchNext = true;
   var response = UrlFetchApp.fetch(url, { headers: headers });
   response = JSON.parse(response);
-  Logger.log(response.length); // 'RESPONSE SIZE', 
   
   // Prepare the schema for the fields requested.
   var dataSchema = [];
@@ -180,7 +174,9 @@ function getData(request) {
           break;
         case 'start_date':
           row.push(v['start_date']);
-          break;
+          break;          
+      default:
+        values.push('');
       }
     });
     rows.push({values: row});
@@ -190,6 +186,5 @@ function getData(request) {
     schema: dataSchema,
     rows: rows
   };
-  Logger.log(result);
   return result;
 }
