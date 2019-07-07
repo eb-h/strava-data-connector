@@ -92,7 +92,7 @@ function getConfig() {
     dateRangeRequired: true
   };
 }
-
+// GDS schema defined here
 function getSchema() {
   return {
     schema: [
@@ -124,14 +124,28 @@ function getSchema() {
         description: 'Date time when activity started',
         dataType: 'STRING',
         semantics: {
-          conceptType: 'DIMENSION',
-          semanticType: 'YEAR_MONTH_DAY',
-          semanticGroup: 'DATETIME',
-          isReaggregatable: true
+          semanticGroup: 'DATETIME'
         }
       }
     ]
   }
+}
+
+/***********************
+* Data Processing here *
+***********************/
+
+/**
+* Converts date from zulu ISO format to GDS'
+*
+* @param {string} dateReceived: Of the form "YYYY-MM-DDTHH:MM:SSZ"
+* @return {string} date in the form YYYYMMDDHH
+*/
+function processDate(dateReceived) {
+  return dateReceived.slice(0, -10)      // remove THH:MM:SSZ
+                     .replace(/-/g, '')  // remove '-'
+                     //.replace(/:/g, '')  // remove ':'
+                     //.replace('T', '' ) // remove 'T'
 }
 
 function getData(request) {
@@ -173,7 +187,8 @@ function getData(request) {
           row.push(v['distance']);
           break;
         case 'start_date':
-          row.push(v['start_date']);
+          row.push(processDate(v['start_date']));
+          //row.push(v['start_date']);
           break;          
       default:
         values.push('');
